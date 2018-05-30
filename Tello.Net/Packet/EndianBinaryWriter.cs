@@ -9,7 +9,7 @@ namespace Tello.Net.Packet
 		private readonly bool swap;
 		private readonly BinaryWriter writer;
 
-        public static EndianBinaryWriter FromMemoryStream(MemoryStream stream)
+        public static EndianBinaryWriter FromStream(Stream stream)
         {
             return new EndianBinaryWriter(new BinaryWriter(stream));
         }
