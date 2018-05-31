@@ -51,6 +51,7 @@
     <Compile Include="Commands\TelloCommands.cs" />
     <Compile Include="Crc\Crc.cs" />
     <Compile Include="Crc\CrcTables.cs" />
+    <Compile Include="Drone.cs" />
     <Compile Include="Packet\CommandBuilder.cs" />
     <Compile Include="Packet\EndianBinaryReader.cs" />
     <Compile Include="Packet\EndianBinaryWriter.cs" />
