@@ -10,25 +10,12 @@ namespace Tello.Net
 {
     public class Drone
     {
-        private readonly Thread cmdThread = new Thread(CommandThreadMain);
-        private readonly Thread videoThread = new Thread(VideoThreadMain);
-        private readonly UdpClient cmdClient;
-        private readonly UdpClient videoClient;
+        private static readonly string hostName = "192.168.10.1";
+        private readonly DroneIo io;
 
         public Drone()
         {
-
-        }
-
-        private static void CommandThreadMain()
-        {
-
-        }
-
-
-        private static void VideoThreadMain()
-        {
-
+            io = new DroneIo(hostName);
         }
     }
 }

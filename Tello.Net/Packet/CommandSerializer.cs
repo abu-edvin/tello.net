@@ -7,26 +7,25 @@ using Tello.Net.Commands;
 
 namespace Tello.Net.Packet
 {
-    public class CommandTranslator
+    public class CommandSerializer
     {
         private const int HeaderSize = 11;
         private const int AckSize = 11;
-        private const byte CommandType = 0xcc;
         private const byte AckType = 0x63;
         private const ushort VideoPort = 6037;
 
         private static readonly Encoding encoding = Encoding.ASCII;
         private static readonly Logger log = LogManager.GetCurrentClassLogger();
 
-        public byte[] Build(byte type, ushort cmdId, ushort seqId, byte[] data)
+        public byte[] Write(byte cmdType, ushort cmdId, ushort seqId, byte[] data)
         {
             int size = data.Length + HeaderSize;
             MemoryStream outStream = new MemoryStream();
-            EndianBinaryWriter writer = EndianBinaryWriter.FromStream(outStream);
-            writer.Write(0xCC);
+            EndianBinaryWriter writer = EndianBinaryWriter.FromStream(outStream, true);
+            writer.Write(0xcc);
             writer.Write((ushort)size << 3);
             writer.Write(CrcCalculator.Crc8(outStream.ToArray()));
-            writer.Write(type);
+            writer.Write(cmdType);
             writer.Write(cmdId);
             writer.Write(seqId);
             if (data != null)
@@ -37,30 +36,23 @@ namespace Tello.Net.Packet
             return outStream.ToArray();
         }
 
-        public void Parse(byte[] data)
+        public TelloCommand Read(byte[] data)
         {
-            if (data.Length < HeaderSize)
+            if (data.Length < HeaderSize || data.Length != data[0])
             {
                 throw new TelloException(
                     $"Packet length {data.Length:d} does not " +
                     $"match expected {data[0]}.");
             }
             MemoryStream inStream = new MemoryStream();
-            EndianBinaryReader reader = EndianBinaryReader.FromStream(inStream);
+            EndianBinaryReader reader = EndianBinaryReader.FromStream(inStream, true);
             byte type = reader.ReadByte();
-            switch (type)
+            if (type != 0xcc)
             {
-                case CommandType:
-                    ParseCommand(inStream, reader);
-                    break;
-                case AckType:
-                    ParseAck(reader);
-                    break;
+                throw new TelloException(
+                    $"Frame type {type:x} does not match 0xcc.");
             }
-        }
 
-        private void ParseCommand(Stream inStream, EndianBinaryReader reader)
-        {
             byte[] header = reader.ReadBytes(3);
             inStream.Position = 0;
 
@@ -82,7 +74,7 @@ namespace Tello.Net.Packet
             ushort commandId = reader.ReadUInt16();
             ushort sequenceId = reader.ReadUInt16();
             ushort dataSize = (ushort)(size - HeaderSize);
-            byte[] data = reader.ReadBytes(dataSize);
+            byte[] messageData = reader.ReadBytes(dataSize);
             ushort crc16 = reader.ReadUInt16();
 
             long pos = inStream.Position;
@@ -95,19 +87,8 @@ namespace Tello.Net.Packet
                 throw new TelloException(
                     $"CRC16 mismatch, {crc16:x} != {calcCrc16:x}.");
             }
-        }
 
-        private void ParseAck(EndianBinaryReader reader)
-        {
-            MemoryStream outStream = new MemoryStream();
-            EndianBinaryWriter writer = EndianBinaryWriter.FromStream(outStream);
-            writer.Write(encoding.GetBytes("conn_ack:"));
-            writer.Write(VideoPort);
-            if (!Array.Equals(outStream.ToArray(), reader.ReadBytes(HeaderSize)))
-            {
-                throw new TelloException("Connection not acknowledged.");
-            }
-
+            return new TelloCommand(packetType, (TelloCommandId)commandId, sequenceId, messageData);
         }
     }
 }

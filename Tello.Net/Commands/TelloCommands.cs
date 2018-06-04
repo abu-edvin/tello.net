@@ -1,15 +1,9 @@
 ﻿namespace Tello.Net.Commands
 {
-    public enum TelloCommands
+    public enum TelloCommandId
     {
         Connect = 1,
         ConnectAck = 2,
-        GetSsid = 17,
-        SetSsid = 18,
-        GetWifiPassword = 19,
-        SetWifiPassword = 20,
-        GetRegion = 21,
-        SetRegion = 22,
         ReqVideoSpsPps = 37,
         TakePicture = 48,
         SwitchPictureVideo = 49,
@@ -60,5 +54,24 @@
         r360 = 1,
         circle = 2,
         upOut = 3
+    }
+
+    public enum TelloPacketType
+    {
+        Connection = 0x00,
+        Settings = 0x48,
+        DateTime = 0x50,
+        Control = 0x60,
+        Special = 0x68
+    }
+
+    internal enum IgnoredCommands
+    {
+        GetSsid = 17,
+        SetSsid = 18,
+        GetWifiPassword = 19,
+        SetWifiPassword = 20,
+        GetRegion = 21,
+        SetRegion = 22,
     }
 }

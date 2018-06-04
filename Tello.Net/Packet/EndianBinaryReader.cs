@@ -9,9 +9,9 @@ namespace Tello.Net.Packet
         private readonly bool swap;
 		private readonly BinaryReader reader;
 
-        public static EndianBinaryReader FromStream(Stream stream)
+        public static EndianBinaryReader FromStream(Stream stream, bool littleEndian)
         {
-            return new EndianBinaryReader(new BinaryReader(stream));
+            return new EndianBinaryReader(new BinaryReader(stream), littleEndian);
         }
 
 		public EndianBinaryReader(BinaryReader binaryReader, bool littleEndian = false)
