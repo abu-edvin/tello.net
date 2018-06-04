@@ -154,6 +154,7 @@ namespace Tello.Net
         private static void HandleBinaryCommand(byte[] data, BlockingCollection<TelloCommand> queue)
         {
             TelloCommand command = serializer.Read(data);
+            log.Debug($"Cmd: {command.Id:x}");
             queue.Add(command);
         }
         

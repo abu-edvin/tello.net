@@ -65,10 +65,9 @@ namespace Tello.Net.Packet
             ushort dataSize = (ushort)(size - HeaderSize);
             byte[] messageData = reader.ReadBytes(dataSize);
             ushort crc16 = reader.ReadUInt16();
-
             long pos = inStream.Position;
             inStream.Position = 0;
-            byte[] crc16Data = reader.ReadBytes(size);
+            byte[] crc16Data = reader.ReadBytes(size - 2);
             inStream.Position = pos;
             ushort calcCrc16 = CrcCalculator.Crc16(crc16Data);
             if (crc16 != calcCrc16)

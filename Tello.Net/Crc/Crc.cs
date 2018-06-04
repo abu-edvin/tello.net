@@ -11,7 +11,7 @@
             foreach (byte b in data)
             {
                 int idx = (crc ^ b) & 0xff;
-                crc = (ushort)((ushort)CrcTables.Crc16Table[idx] ^ (ushort)(crc >> 8));
+                crc = (ushort)(CrcTables.Crc16Table[idx] ^ ((crc >> 8) & 0xff));
             }
             return crc;
         }
