@@ -29,46 +29,62 @@ namespace Tello.Net
         private readonly BlockingCollection<TelloCommand> commandQueue = new BlockingCollection<TelloCommand>();
         private readonly UdpClient cmdClient;
         private readonly UdpClient videoClient;
+        private readonly object sendLock = new object();
 
         public event EventHandler<TelloCommand> CommandReceived;
 
-        private struct CommandThreadState
+        private interface IBaseState
+        {
+            UdpClient Client { get; set; }
+        }
+
+        private struct CommandThreadState : IBaseState
         {
             public UdpClient Client { get; set; }
             public BlockingCollection<TelloCommand> Queue { get; set; }
         }
 
-        private struct EventThreadState
+        private struct EventThreadState : IBaseState
         {
+            public UdpClient Client { get; set; }
             public BlockingCollection<TelloCommand> Queue { get; set; }
             public Action<TelloCommand> Handler { get; set; }
+        }
+
+        private struct VideoThreadState : IBaseState
+        {
+            public UdpClient Client { get; set; }
         }
 
         public DroneIo(string hostName)
         {
             cmdClient = new UdpClient(hostName, CommandPort);
             videoClient = new UdpClient(hostName, VideoPort);
-            cmdThread.IsBackground = videoThread.IsBackground = true;
-            CommandThreadState cmdState = new CommandThreadState() { Client = cmdClient, Queue = commandQueue };
-            EventThreadState eventState = new EventThreadState() { Queue = commandQueue, Handler = HandleCommandEvent };
+            CommandThreadState cmdState = new CommandThreadState() {
+                Client = cmdClient, Queue = commandQueue };
+            EventThreadState eventState = new EventThreadState() {
+                Client = cmdClient, Queue = commandQueue, Handler = HandleCommandEvent };
+            VideoThreadState videoState = new VideoThreadState() {
+                Client = cmdClient };
             cmdThread.Start(cmdState);
-            videoThread.Start(videoClient);
-            cmdThread.Start(commandQueue);
+            videoThread.Start(videoState);
+            eventThread.Start(eventState);
             RequestConnection();
         }
 
-        public Task SendTextCommand(string command)
+        public void SendTextCommand(byte[] command)
         {
-            byte[] cmdData = encoding.GetBytes(command);
-            lock (cmdClient)
+            lock (sendLock)
             {
-                return cmdClient.SendAsync(cmdData, cmdData.Length);
+                int result = cmdClient.Send(command, command.Length);
+                int x = 5;
             }
         }
 
         private void RequestConnection()
         {
-
+            byte[] data = TelloCommands.ConnectionRequest(VideoPort);
+            SendTextCommand(data);
         }
 
         private static void CommandThreadMain(object state)
@@ -88,7 +104,8 @@ namespace Tello.Net
 
         private static void EventThreadMain(object state)
         {
-            BlockingCollection<TelloCommand> queue = (BlockingCollection<TelloCommand>)state;
+            EventThreadState eventState = (EventThreadState)state;
+            BlockingCollection<TelloCommand> queue = eventState.Queue;
             isActive = true;
             while (isActive)
             {
@@ -106,7 +123,7 @@ namespace Tello.Net
             Array.Copy(frame, 1, subFrame, 0, subFrame.Length);
             if (frame[0] == 0xcc)
             {
-                HandleBinaryCommand(subFrame, queue);
+                HandleBinaryCommand(frame, queue);
                 return;
             }
             HandleTextCommand(frame);
@@ -118,13 +135,14 @@ namespace Tello.Net
 
         private static void CommonThreadMain(object state, Action<byte[]> frameHandler)
         {
-            UdpClient client = (UdpClient)state;
+            object receiveLock = new object();
+            UdpClient client = ((IBaseState)state).Client;
             isActive = true;
             IPEndPoint ep = new IPEndPoint(IPAddress.Any, 0);
             while (isActive)
             {
-                byte[] rxData = null;
-                lock (client)
+                byte[] rxData;
+                lock (receiveLock)
                 {
                     rxData = client.Receive(ref ep);
                 }

@@ -38,23 +38,12 @@ namespace Tello.Net.Packet
 
         public TelloCommand Read(byte[] data)
         {
-            if (data.Length < HeaderSize || data.Length != data[0])
-            {
-                throw new TelloException(
-                    $"Packet length {data.Length:d} does not " +
-                    $"match expected {data[0]}.");
-            }
-            MemoryStream inStream = new MemoryStream();
-            EndianBinaryReader reader = EndianBinaryReader.FromStream(inStream, true);
-            byte type = reader.ReadByte();
-            if (type != 0xcc)
-            {
-                throw new TelloException(
-                    $"Frame type {type:x} does not match 0xcc.");
-            }
-
+            EndianBinaryReader reader = new EndianBinaryReader(data);
+            Stream inStream = reader.BaseSteam;
             byte[] header = reader.ReadBytes(3);
             inStream.Position = 0;
+
+            byte fid = reader.ReadByte();
 
             ushort size = (ushort)(reader.ReadUInt16() >> 3);
             if (size < 11)
