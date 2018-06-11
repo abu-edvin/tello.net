@@ -15,7 +15,17 @@ namespace TelloTest
             Drone drone = new Drone();
             for (; ;)
             {
-                Thread.Sleep(100);
+                ConsoleKeyInfo key = Console.ReadKey(true);
+                switch (key.Key)
+                {
+                    case ConsoleKey.T:
+                        drone.TakeOff();
+                        break;
+                    case ConsoleKey.L:
+                        drone.Land();
+                        break;
+                }
+                Thread.Sleep(50);
             }
         }
     }

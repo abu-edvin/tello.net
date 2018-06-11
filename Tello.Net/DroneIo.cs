@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -30,8 +31,12 @@ namespace Tello.Net
         private readonly UdpClient cmdClient;
         private readonly UdpClient videoClient;
         private readonly object sendLock = new object();
+        private static readonly ICommandReader[] commandReaders =
+        {
+           new WifiStatusReader()
+        };
 
-        public event EventHandler<TelloCommand> CommandReceived;
+        private ushort seqId;
 
         private interface IBaseState
         {
@@ -56,6 +61,8 @@ namespace Tello.Net
             public UdpClient Client { get; set; }
         }
 
+        public event EventHandler<IEventCommand> CommandReceived;
+
         public DroneIo(string hostName)
         {
             cmdClient = new UdpClient(hostName, CommandPort);
@@ -76,9 +83,28 @@ namespace Tello.Net
         {
             lock (sendLock)
             {
-                int result = cmdClient.Send(command, command.Length);
-                int x = 5;
+                cmdClient.Send(command, command.Length);
             }
+        }
+
+        public void SendCommand(TelloCommand command)
+        {
+            lock (sendLock)
+            {
+                byte[] data = serializer.Write(command, seqId);
+                cmdClient.Send(data, data.Length);
+            }
+            seqId++;
+        }
+
+        public void TakeOff()
+        {
+            SendCommand(new TelloCommand(0x68, TelloCommandId.TakeOff));
+        }
+
+        public void Land()
+        {
+            SendCommand(new TelloCommand(0x68, TelloCommandId.Land));
         }
 
         private void RequestConnection()
@@ -114,23 +140,10 @@ namespace Tello.Net
                 catch (InvalidOperationException) { Thread.Sleep(100); }
 
                 if (command == null) { continue; }
+                ICommandReader reader = commandReaders.SingleOrDefault(t => t.Id == command.Id);
+                IEventCommand evt = reader?.Read(command);
+                if (evt == null) continue;
             }
-        }
-
-        private static void HandleCommandFrame(byte[] frame, BlockingCollection<TelloCommand> queue)
-        {
-            byte[] subFrame = new byte[frame.Length - 1];
-            Array.Copy(frame, 1, subFrame, 0, subFrame.Length);
-            if (frame[0] == 0xcc)
-            {
-                HandleBinaryCommand(frame, queue);
-                return;
-            }
-            HandleTextCommand(frame);
-        }
-
-        private static void HandleVideoFrame(byte[] frame)
-        {
         }
 
         private static void CommonThreadMain(object state, Action<byte[]> frameHandler)
@@ -151,16 +164,36 @@ namespace Tello.Net
             client.Close();
         }
 
+        private static void HandleVideoFrame(byte[] frame)
+        {
+        }
+        private static void HandleCommandFrame(byte[] frame, BlockingCollection<TelloCommand> queue)
+        {
+            byte[] subFrame = new byte[frame.Length - 1];
+            Array.Copy(frame, 1, subFrame, 0, subFrame.Length);
+            if (frame[0] == 0xcc)
+            {
+                HandleBinaryCommand(frame, queue);
+                return;
+            }
+            HandleTextCommand(frame);
+        }
+
+
         private static void HandleBinaryCommand(byte[] data, BlockingCollection<TelloCommand> queue)
         {
             TelloCommand command = serializer.Read(data);
-            log.Debug($"Cmd: {command.Id:x}");
+            log.Debug($"Cmd: {command.Id}");
             queue.Add(command);
         }
         
         private void HandleCommandEvent(TelloCommand command)
         {
-            CommandReceived?.Invoke(this, command);
+            ICommandReader reader = 
+                commandReaders.SingleOrDefault(t => t.Id == command.Id);
+            IEventCommand evt = reader?.Read(command);
+            if (evt == null) return;
+            CommandReceived?.Invoke(this, evt);
         }
 
         private static void HandleTextCommand(byte[] data)

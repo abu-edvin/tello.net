@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Tello.Net.Packet
 {
-	internal class EndianBinaryReader
+	public class EndianBinaryReader
 	{
         private readonly bool swap;
 		private readonly BinaryReader reader;

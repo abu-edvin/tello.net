@@ -17,20 +17,20 @@ namespace Tello.Net.Packet
         private static readonly Encoding encoding = Encoding.ASCII;
         private static readonly Logger log = LogManager.GetCurrentClassLogger();
 
-        public byte[] Write(byte cmdType, ushort cmdId, ushort seqId, byte[] data)
+        public byte[] Write(TelloCommand command, ushort seqId)
         {
-            int size = data.Length + HeaderSize;
+            int size = command.Data.Length + HeaderSize;
             MemoryStream outStream = new MemoryStream();
             EndianBinaryWriter writer = EndianBinaryWriter.FromStream(outStream, true);
             writer.Write(0xcc);
             writer.Write((ushort)size << 3);
             writer.Write(CrcCalculator.Crc8(outStream.ToArray()));
-            writer.Write(cmdType);
-            writer.Write(cmdId);
+            writer.Write(command.Type);
+            writer.Write((ushort)command.Id);
             writer.Write(seqId);
-            if (data != null)
+            if (command.Data != null)
             {
-                writer.Write(data);
+                writer.Write(command.Data);
             }
             writer.Write(CrcCalculator.Crc16(outStream.ToArray()));
             return outStream.ToArray();

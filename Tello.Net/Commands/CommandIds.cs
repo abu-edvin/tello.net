@@ -1,6 +1,6 @@
 ﻿namespace Tello.Net.Commands
 {
-    public enum TelloCommandId
+    public enum TelloCommandId : ushort
     {
         Connect = 1,
         ConnectAck = 2,
@@ -22,7 +22,7 @@
         Status = 86,
         GetAltLimit = 4182,
         SetJpegQuality = 55,
-        Takeoff = 84,
+        TakeOff = 84,
         Land = 85,
         SetAltLimit = 88,
         Flip = 92,

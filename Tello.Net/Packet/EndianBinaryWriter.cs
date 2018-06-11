@@ -1,6 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Text;
+using Tello.Net.Commands;
 
 namespace Tello.Net.Packet
 {
@@ -8,6 +11,7 @@ namespace Tello.Net.Packet
 	{
 		private readonly bool swap;
 		private readonly BinaryWriter writer;
+        private readonly IEnumerable<IEventCommand> commands = new Collection<IEventCommand>();
 
         public Stream BaseStream { get; }
 

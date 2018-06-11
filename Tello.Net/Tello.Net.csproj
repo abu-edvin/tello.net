@@ -48,9 +48,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Commands\FlightData.cs" />
     <Compile Include="Commands\CommandIds.cs" />
+    <Compile Include="Commands\ICommandReader.cs" />
+    <Compile Include="Commands\IEventCommand.cs" />
     <Compile Include="Commands\TelloCommand.cs" />
     <Compile Include="Commands\TelloCommands.cs" />
+    <Compile Include="Commands\WifiStatus.cs" />
     <Compile Include="Crc\Crc.cs" />
     <Compile Include="Crc\CrcTables.cs" />
     <Compile Include="Drone.cs" />
