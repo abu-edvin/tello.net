@@ -11,7 +11,7 @@ namespace Tello.Net
 {
     public class Drone
     {
-        private static readonly string hostName = "192.168.10.1";
+        private static readonly string hostName = "192.168.1.52";
         private static readonly Logger log = LogManager.GetCurrentClassLogger();
         private readonly DroneIo io;
 

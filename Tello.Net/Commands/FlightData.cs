@@ -77,15 +77,4 @@ namespace Tello.Net.Commands
 
         public bool WindState { get; private set; }
     }
-
-    public class StatusReader : ICommandReader
-    {
-        public TelloCommandId Id => TelloCommandId.Status;
-
-        public IEventCommand Read(TelloCommand command)
-        {
-            EndianBinaryReader reader = command.CreateDataReader();
-            return null;
-        }
-    }
 }

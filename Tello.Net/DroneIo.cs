@@ -33,7 +33,7 @@ namespace Tello.Net
         private readonly object sendLock = new object();
         private static readonly ICommandReader[] commandReaders =
         {
-           new WifiStatusReader()
+           new WifiStatus.Reader(),
         };
 
         private ushort seqId;
@@ -83,7 +83,8 @@ namespace Tello.Net
         {
             lock (sendLock)
             {
-                cmdClient.Send(command, command.Length);
+                int size = cmdClient.Send(command, command.Length);
+                log.Debug("Text command sent, {0} bytes: {1}", size, Encoding.ASCII.GetString(command));
             }
         }
 
@@ -199,6 +200,7 @@ namespace Tello.Net
         private static void HandleTextCommand(byte[] data)
         {
             string text = encoding.GetString(data);
+            log.Debug("Text command received: {0}", text);
             int x = 5;
         }
     }
